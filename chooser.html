@@ -79,9 +79,6 @@
 
   /* ============================================================
      PAGE BODY
-
-     Everything below the topbar fits into the remaining
-     viewport height.
      ============================================================ */
 
   .table-wrap {
@@ -122,8 +119,6 @@
 
   /* ============================================================
      MAIN TWO-COLUMN LAYOUT
-
-     This occupies all remaining vertical space.
      ============================================================ */
 
   .content-layout {
@@ -143,8 +138,6 @@
 
   /* ============================================================
      LEFT FILTER COLUMN
-
-     Sidebar itself does not scroll with the table.
      ============================================================ */
 
   .filter-column {
@@ -175,9 +168,6 @@
 
   /* ============================================================
      FILTER PANELS
-
-     Heights are deliberately compact so the sidebar can fit
-     comfortably within normal desktop viewports.
      ============================================================ */
 
   .filter-panel {
@@ -242,8 +232,6 @@
 
   /* ============================================================
      FILTER OPTIONS
-
-     The options area is constrained using viewport height.
      ============================================================ */
 
   .filter-options {
@@ -441,8 +429,6 @@
 
   /* ============================================================
      CHANGE ICONS
-
-     Explicit SVG sizing is important here.
      ============================================================ */
 
   .change-filter__icon {
@@ -484,13 +470,11 @@
      ============================================================ */
 
   .change-increase {
-        --change-color: #b42bc0;
-
+    --change-color: #b42bc0;
   }
 
   .change-decrease {
-        --change-color: #2e8b57;
-
+    --change-color: #2e8b57;
   }
 
   .change-no-change {
@@ -500,9 +484,6 @@
 
   /* ============================================================
      RIGHT TABLE COLUMN
-
-     Critical: min-height: 0 allows the table to occupy only
-     the available viewport height.
      ============================================================ */
 
   .table-column {
@@ -566,8 +547,6 @@
 
   /* ============================================================
      DATATABLE CONTROLS
-
-     Preserve the existing DataTables appearance.
      ============================================================ */
 
   .dataTables_wrapper {
@@ -588,8 +567,6 @@
 
   /* ============================================================
      TABLE SCROLLING
-
-     The table itself gets the remaining viewport height.
      ============================================================ */
 
   .dataTables_scroll {
@@ -620,8 +597,6 @@
 
   /* ============================================================
      DATATABLE
-
-     These are your original table styles.
      ============================================================ */
 
   table.dataTable {
@@ -654,21 +629,34 @@
 
 
   /* ============================================================
+     CLICKABLE TABLE ROWS
+     ============================================================ */
+
+  table.dataTable tbody tr {
+    cursor: pointer;
+
+    transition:
+      background-color 0.12s ease;
+  }
+
+  table.dataTable tbody tr:hover {
+    background-color: #eef4fa !important;
+  }
+
+  table.dataTable tbody tr:focus {
+    outline: 2px solid #7fd6ff;
+
+    outline-offset: -2px;
+  }
+
+
+  /* ============================================================
      RIGHT-ALIGN NUMERIC VALUE COLUMNS
      ============================================================ */
 
   table.dataTable th.value-column,
   table.dataTable td.value-column {
     text-align: right;
-  }
-
-
-  /* ============================================================
-     PERCENT CHANGE — BOLD
-     ============================================================ */
-
-  table.dataTable td.value-column {
-    /* leave existing numeric styling intact */
   }
 
 
@@ -711,8 +699,6 @@
 
   /* ============================================================
      CHANGE ICON IN TABLE
-
-     Keep these separate from the filter icons.
      ============================================================ */
 
   .change-icon-wrapper {
@@ -760,6 +746,178 @@
     stroke-linecap: round;
 
     stroke-linejoin: round;
+  }
+
+
+  /* ============================================================
+     MODAL
+     ============================================================ */
+
+  .indicator-modal {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 9999;
+
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 30px;
+
+    background: rgba(0, 0, 0, 0.55);
+  }
+
+  .indicator-modal.is-open {
+    display: flex;
+  }
+
+
+  /* ============================================================
+     MODAL CONTENT
+     ============================================================ */
+
+  .indicator-modal__content {
+    position: relative;
+
+    width: min(1100px, 92vw);
+
+    height: min(760px, 88vh);
+
+    display: flex;
+
+    flex-direction: column;
+
+    background: #ffffff;
+
+    border-radius: 8px;
+
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.28);
+
+    overflow: hidden;
+  }
+
+
+  /* ============================================================
+     MODAL HEADER
+     ============================================================ */
+
+  .indicator-modal__header {
+    min-height: 64px;
+
+    display: flex;
+
+    align-items: center;
+
+    padding: 14px 60px 14px 22px;
+
+    background: #ffffff;
+
+    border-bottom: 1px solid #d7dce3;
+
+    color: #0a2c5c;
+
+    font-size: 1.15rem;
+
+    font-weight: 700;
+
+    line-height: 1.25;
+  }
+
+
+  /* ============================================================
+     MODAL CLOSE BUTTON
+     ============================================================ */
+
+  .indicator-modal__close {
+    position: absolute;
+
+    top: 12px;
+    right: 14px;
+
+    width: 36px;
+    height: 36px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border: 0;
+
+    border-radius: 5px;
+
+    background: transparent;
+
+    color: #5a6a7a;
+
+    font-size: 28px;
+
+    font-weight: 300;
+
+    line-height: 1;
+
+    cursor: pointer;
+  }
+
+  .indicator-modal__close:hover {
+    background: #eef1f5;
+
+    color: #1c2b3a;
+  }
+
+  .indicator-modal__close:focus-visible {
+    outline: 2px solid #7fd6ff;
+
+    outline-offset: 2px;
+  }
+
+
+  /* ============================================================
+     MODAL BODY
+     ============================================================ */
+
+  .indicator-modal__body {
+    flex: 1 1 auto;
+
+    min-height: 0;
+
+    padding: 20px;
+
+    background: #ffffff;
+
+    overflow: auto;
+  }
+
+
+  /* ============================================================
+     DASHBOARD PLACEHOLDER
+     ============================================================ */
+
+  .indicator-modal__placeholder {
+    width: 100%;
+
+    height: 100%;
+
+    min-height: 300px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    background: #e5e7eb;
+
+    border: 1px solid #d1d5db;
+
+    border-radius: 6px;
+
+    color: #8a96a3;
+
+    font-size: 0.9rem;
   }
 
 
@@ -817,6 +975,18 @@
     .dataTables_scrollBody {
       overflow-y: auto !important;
     }
+
+
+    .indicator-modal {
+      padding: 15px;
+    }
+
+    .indicator-modal__content {
+      width: 96vw;
+
+      height: 92vh;
+    }
+
   }
 
 
@@ -845,13 +1015,39 @@
     .change-filter__pill {
       padding: 4px 8px 4px 5px;
     }
+
+
+    .indicator-modal {
+      padding: 8px;
+    }
+
+    .indicator-modal__content {
+      width: 100%;
+
+      height: 96vh;
+
+      border-radius: 6px;
+    }
+
+    .indicator-modal__header {
+      min-height: 58px;
+
+      padding-left: 16px;
+
+      padding-right: 50px;
+
+      font-size: 1rem;
+    }
+
+    .indicator-modal__body {
+      padding: 12px;
+    }
+
   }
 
 
   /* ============================================================
      SHORT VIEWPORTS
-
-     Further compress filters when the browser window is short.
      ============================================================ */
 
   @media (min-width: 801px) and (max-height: 750px) {
@@ -890,6 +1086,7 @@
     .change-filter {
       margin-bottom: 6px;
     }
+
   }
 
 
@@ -932,6 +1129,7 @@
     .change-filter {
       margin-bottom: 5px;
     }
+
   }
 
 </style>
@@ -1138,6 +1336,51 @@
 
 
 <!-- ==========================================================
+     INDICATOR MODAL
+     ========================================================== -->
+
+<div id="indicator-modal"
+     class="indicator-modal"
+     aria-hidden="true"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="indicator-modal-title">
+
+  <div class="indicator-modal__content">
+
+    <button
+      type="button"
+      id="indicator-modal-close"
+      class="indicator-modal__close"
+      aria-label="Close">
+
+      &times;
+
+    </button>
+
+
+    <div id="indicator-modal-title"
+         class="indicator-modal__header">
+
+    </div>
+
+
+    <div class="indicator-modal__body">
+
+      <div class="indicator-modal__placeholder">
+
+        Dashboard placeholder
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ==========================================================
      JAVASCRIPT LIBRARIES
      ========================================================== -->
 
@@ -1233,6 +1476,20 @@ const dataSourceSelectedEl =
 
 const dataSourceOptionsEl =
   document.getElementById('data-source-options');
+
+
+// ============================================================
+// MODAL DOM REFERENCES
+// ============================================================
+
+const indicatorModal =
+  document.getElementById('indicator-modal');
+
+const indicatorModalTitle =
+  document.getElementById('indicator-modal-title');
+
+const indicatorModalClose =
+  document.getElementById('indicator-modal-close');
 
 
 // ============================================================
@@ -1604,6 +1861,113 @@ function getChangeFilterIcon(direction) {
   return getChangeIcon(direction);
 
 }
+
+
+// ============================================================
+// MODAL FUNCTIONS
+// ============================================================
+
+function openIndicatorModal(row) {
+
+  const indicatorField =
+    normalizedToActual[
+      normalizeHeader(
+        'Indicator Name'
+      )
+    ];
+
+  const indicatorName =
+    indicatorField
+      ? row[indicatorField] || ''
+      : 'Indicator';
+
+
+  indicatorModalTitle.textContent =
+    indicatorName;
+
+
+  indicatorModal.classList.add(
+    'is-open'
+  );
+
+  indicatorModal.setAttribute(
+    'aria-hidden',
+    'false'
+  );
+
+
+  document.body.style.overflow =
+    'hidden';
+
+
+  indicatorModalClose.focus();
+
+}
+
+
+function closeIndicatorModal() {
+
+  indicatorModal.classList.remove(
+    'is-open'
+  );
+
+  indicatorModal.setAttribute(
+    'aria-hidden',
+    'true'
+  );
+
+
+  document.body.style.overflow =
+    '';
+
+}
+
+
+// ============================================================
+// MODAL EVENTS
+// ============================================================
+
+indicatorModalClose.addEventListener(
+  'click',
+  function () {
+
+    closeIndicatorModal();
+
+  }
+);
+
+
+indicatorModal.addEventListener(
+  'click',
+  function (event) {
+
+    if (
+      event.target === indicatorModal
+    ) {
+
+      closeIndicatorModal();
+
+    }
+
+  }
+);
+
+
+document.addEventListener(
+  'keydown',
+  function (event) {
+
+    if (
+      event.key === 'Escape' &&
+      indicatorModal.classList.contains('is-open')
+    ) {
+
+      closeIndicatorModal();
+
+    }
+
+  }
+);
 
 
 // ============================================================
@@ -2774,6 +3138,90 @@ Papa.parse(
           ]
 
         });
+
+
+      // ======================================================
+      // CLICKABLE ROWS
+      // ======================================================
+
+      $('#summary-table tbody').on(
+        'click',
+        'tr',
+        function () {
+
+          const rowData =
+            table
+              .row(this)
+              .data();
+
+
+          if (!rowData) {
+            return;
+          }
+
+
+          openIndicatorModal(
+            rowData
+          );
+
+        }
+      );
+
+
+      // ======================================================
+      // KEYBOARD ACCESS TO ROWS
+      // ======================================================
+
+      $('#summary-table tbody').on(
+        'keydown',
+        'tr',
+        function (event) {
+
+          if (
+            event.key !== 'Enter' &&
+            event.key !== ' '
+          ) {
+            return;
+          }
+
+
+          event.preventDefault();
+
+
+          const rowData =
+            table
+              .row(this)
+              .data();
+
+
+          if (!rowData) {
+            return;
+          }
+
+
+          openIndicatorModal(
+            rowData
+          );
+
+        }
+      );
+
+
+      // Make rendered rows keyboard-focusable.
+      $('#summary-table tbody').on(
+        'draw.dt',
+        function () {
+
+          $('#summary-table tbody tr')
+            .attr('tabindex', '0');
+
+        }
+      );
+
+
+      // Apply tabindex immediately after initialization.
+      $('#summary-table tbody tr')
+        .attr('tabindex', '0');
 
 
       statusEl.style.display =
