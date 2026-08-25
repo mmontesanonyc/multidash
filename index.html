@@ -141,6 +141,15 @@ TO DO:
     border: none;
   }
 
+  /* Tableau embed stretches to fill its panel completely, same as the iframes.
+     The tableau-viz custom element uses its width/height attributes internally,
+     so we override with !important to force it to fill the available space. */
+  .panel tableau-viz {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
   /* Text-only panels get their own padded wrapper so they're not edge-to-edge */
   .panel .text-content {
     height: 100%;
@@ -270,7 +279,7 @@ TO DO:
         <iframe src="https://tableauanalytics.health.dohmh.nycnet/#/site/AgencyShare/views/PopulationHealthImpactSurveillanceSystem/TableofContents" title="PHISS"></iframe>
                -->
 
-       <script type='module' src='https://tableauanalytics.health.dohmh.nycnet/javascripts/api/tableau.embedding.3.latest.min.js'></script><tableau-viz id='tableau-viz' src='https://tableauanalytics.health.dohmh.nycnet/t/AgencyShare/views/PopulationHealthImpactSurveillanceSystem/TableofContents' width='1085' height='690' hide-tabs toolbar='bottom' ></tableau-viz>
+       <script type='module' src='https://tableauanalytics.health.dohmh.nycnet/javascripts/api/tableau.embedding.3.latest.min.js'></script><tableau-viz id='tableau-viz' src='https://tableauanalytics.health.dohmh.nycnet/t/AgencyShare/views/PopulationHealthImpactSurveillanceSystem/TableofContents' width='100%' height='100%' hide-tabs toolbar='bottom' ></tableau-viz>
        
       </div>
       <div class="panel" id="panel-3">
