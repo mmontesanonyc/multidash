@@ -245,7 +245,12 @@
   }
 
   .filter-option {
-    display: block;
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 8px;
 
     width: 100%;
 
@@ -284,6 +289,47 @@
     outline: 2px solid #7fd6ff;
 
     outline-offset: -2px;
+  }
+
+  .filter-option__group {
+    display: flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    min-width: 0;
+  }
+
+  .filter-option__label {
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+    min-width: 0;
+  }
+
+  .filter-option__badge {
+    flex: 0 0 auto;
+
+    min-width: 18px;
+
+    padding: 1px 6px;
+
+    border-radius: 999px;
+
+    background: #e5e9ef;
+
+    color: #4a5a6a;
+
+    font-size: 0.65rem;
+    font-weight: 700;
+
+    text-align: center;
+
+    line-height: 1.4;
   }
 
 
@@ -661,6 +707,28 @@
 
 
   /* ============================================================
+     PREVIOUS VALUE SEPARATOR
+     ============================================================ */
+
+  table.dataTable th.previous-value-column,
+  table.dataTable td.previous-value-column {
+    border-left: 1px solid #d7dce3;
+  }
+
+
+  /* ============================================================
+     PERCENT CHANGE EMPHASIS
+     (matches Indicator name: bold, same size/color)
+     ============================================================ */
+
+  table.dataTable td.percent-change-column {
+    font-weight: 700;
+
+    color: #1c2b3a;
+  }
+
+
+  /* ============================================================
      INDICATOR CELL
      ============================================================ */
 
@@ -746,6 +814,35 @@
     stroke-linecap: round;
 
     stroke-linejoin: round;
+  }
+
+
+  /* ============================================================
+     CHANGE COLUMN — CENTER + ENLARGE
+     ============================================================ */
+
+  table.dataTable th.change-column,
+  table.dataTable td.change-column {
+    text-align: center;
+  }
+
+  table.dataTable td.change-column .change-icon-wrapper {
+    width: 34px;
+
+    height: 34px;
+  }
+
+  table.dataTable td.change-column .change-icon {
+    width: 32px !important;
+    height: 32px !important;
+
+    min-width: 32px;
+    min-height: 32px;
+
+    max-width: 32px;
+    max-height: 32px;
+
+    flex: 0 0 32px;
   }
 
 
@@ -1396,19 +1493,22 @@
 
 // ============================================================
 // COLUMN DISPLAY SPEC
+// Reference only — documents the on-screen column order.
+// Columns are built explicitly below (Change, Indicator,
+// Percent Change, Previous Value, Current Value).
 // ============================================================
 
 const COLUMN_DISPLAY_SPEC = [
 
+  'Change',
+
   'Indicator Name',
 
-  'Current Value Date',
+  'Current vs Previous Delta (%)',
 
   'Previous Value',
 
-  'Current Value',
-
-  'Current vs Previous Delta (%)'
+  'Current Value'
 
 ];
 
@@ -1517,6 +1617,14 @@ let percentChangeColumnIndex = null;
 let changeColumnIndex = null;
 
 let normalizedToActual = {};
+
+let allRows = [];
+
+let renderTagsFilter = null;
+
+let renderFrequencyFilter = null;
+
+let renderDataSourceFilter = null;
 
 
 // ============================================================
@@ -1971,6 +2079,265 @@ document.addEventListener(
 
 
 // ============================================================
+// FACETED FILTER MATCHING / COUNTS
+// ============================================================
+
+function rowMatchesFilters(row, excludeDimension) {
+
+  if (
+    excludeDimension !== 'change' &&
+    selectedChange
+  ) {
+
+    if (
+      getChangeDirection(row) !==
+      selectedChange
+    ) {
+
+      return false;
+
+    }
+
+  }
+
+
+  if (
+    excludeDimension !== 'tags' &&
+    selectedTag
+  ) {
+
+    const tagsField =
+      normalizedToActual[
+        normalizeHeader(
+          FILTER_FIELDS.tags
+        )
+      ];
+
+    const rowTags =
+      String(
+        (tagsField && row[tagsField]) || ''
+      )
+        .split(',')
+        .map(function (tag) {
+          return tag.trim();
+        })
+        .filter(function (tag) {
+          return tag.length > 0;
+        });
+
+    if (
+      rowTags.indexOf(selectedTag) === -1
+    ) {
+
+      return false;
+
+    }
+
+  }
+
+
+  if (
+    excludeDimension !== 'frequency' &&
+    selectedFrequency
+  ) {
+
+    const frequencyField =
+      normalizedToActual[
+        normalizeHeader(
+          FILTER_FIELDS.frequency
+        )
+      ];
+
+    const value =
+      String(
+        (frequencyField && row[frequencyField]) || ''
+      ).trim();
+
+    if (value !== selectedFrequency) {
+
+      return false;
+
+    }
+
+  }
+
+
+  if (
+    excludeDimension !== 'dataSource' &&
+    selectedDataSource
+  ) {
+
+    const dataSourceField =
+      normalizedToActual[
+        normalizeHeader(
+          FILTER_FIELDS.dataSource
+        )
+      ];
+
+    const value =
+      String(
+        (dataSourceField && row[dataSourceField]) || ''
+      ).trim();
+
+    if (value !== selectedDataSource) {
+
+      return false;
+
+    }
+
+  }
+
+
+  return true;
+
+}
+
+
+function getChangeCounts() {
+
+  const counts = {
+    increase: 0,
+    decrease: 0,
+    'no-change': 0
+  };
+
+  allRows.forEach(function (row) {
+
+    if (!rowMatchesFilters(row, 'change')) {
+      return;
+    }
+
+    const direction =
+      getChangeDirection(row);
+
+    if (
+      direction &&
+      Object.prototype.hasOwnProperty.call(
+        counts,
+        direction
+      )
+    ) {
+
+      counts[direction]++;
+
+    }
+
+  });
+
+  return counts;
+
+}
+
+
+function getTagCounts() {
+
+  const tagsField =
+    normalizedToActual[
+      normalizeHeader(
+        FILTER_FIELDS.tags
+      )
+    ];
+
+  const counts = {};
+
+  if (!tagsField) {
+    return counts;
+  }
+
+  allRows.forEach(function (row) {
+
+    if (!rowMatchesFilters(row, 'tags')) {
+      return;
+    }
+
+    String(row[tagsField] || '')
+      .split(',')
+      .map(function (tag) {
+        return tag.trim();
+      })
+      .filter(function (tag) {
+        return tag.length > 0;
+      })
+      .forEach(function (tag) {
+
+        counts[tag] =
+          (counts[tag] || 0) + 1;
+
+      });
+
+  });
+
+  return counts;
+
+}
+
+
+function getSimpleFieldCounts(
+  fieldKey,
+  excludeDimension
+) {
+
+  const field =
+    normalizedToActual[
+      normalizeHeader(
+        FILTER_FIELDS[fieldKey]
+      )
+    ];
+
+  const counts = {};
+
+  if (!field) {
+    return counts;
+  }
+
+  allRows.forEach(function (row) {
+
+    if (
+      !rowMatchesFilters(
+        row,
+        excludeDimension
+      )
+    ) {
+      return;
+    }
+
+    const value =
+      String(row[field] || '').trim();
+
+    if (!value) {
+      return;
+    }
+
+    counts[value] =
+      (counts[value] || 0) + 1;
+
+  });
+
+  return counts;
+
+}
+
+
+function refreshAllFilterOptions() {
+
+  renderChangeFilter();
+
+  if (renderTagsFilter) {
+    renderTagsFilter();
+  }
+
+  if (renderFrequencyFilter) {
+    renderFrequencyFilter();
+  }
+
+  if (renderDataSourceFilter) {
+    renderDataSourceFilter();
+  }
+
+}
+
+
+// ============================================================
 // APPLY FILTERS
 // ============================================================
 
@@ -2219,7 +2586,8 @@ function renderFilterOptions(
   values,
   optionsEl,
   selectedValue,
-  onSelect
+  onSelect,
+  counts
 ) {
 
   optionsEl.innerHTML = '';
@@ -2248,8 +2616,31 @@ function renderFilterOptions(
       }
 
 
-      button.textContent =
+      const label =
+        document.createElement('span');
+
+      label.className =
+        'filter-option__label';
+
+      label.textContent =
         value;
+
+
+      const badge =
+        document.createElement('span');
+
+      badge.className =
+        'filter-option__badge';
+
+      badge.textContent =
+        (counts && counts[value] !== undefined)
+          ? counts[value]
+          : 0;
+
+
+      button.appendChild(label);
+
+      button.appendChild(badge);
 
 
       button.addEventListener(
@@ -2298,6 +2689,10 @@ function renderChangeFilterOptions() {
   ];
 
 
+  const counts =
+    getChangeCounts();
+
+
   changeOptionsEl.innerHTML = '';
 
 
@@ -2326,11 +2721,17 @@ function renderChangeFilterOptions() {
 
       button.innerHTML =
 
+        '<span class="filter-option__group">' +
+
         getChangeFilterIcon(
           option.value
         ) +
 
-        `<span>${option.label}</span>`;
+        `<span>${option.label}</span>` +
+
+        '</span>' +
+
+        `<span class="filter-option__badge">${counts[option.value] || 0}</span>`;
 
 
       button.addEventListener(
@@ -2341,7 +2742,7 @@ function renderChangeFilterOptions() {
             option.value;
 
 
-          renderChangeFilter();
+          refreshAllFilterOptions();
 
 
           applyFilters();
@@ -2409,7 +2810,7 @@ function renderChangeFilter() {
 
       selectedChange = null;
 
-      renderChangeFilter();
+      refreshAllFilterOptions();
 
       applyFilters();
 
@@ -2435,7 +2836,8 @@ function buildFilter(
   selectedEl,
   emptyText,
   getSelected,
-  setSelected
+  setSelected,
+  getCounts
 ) {
 
   function render() {
@@ -2456,13 +2858,17 @@ function buildFilter(
 
         setSelected(null);
 
-        render();
+        refreshAllFilterOptions();
 
         applyFilters();
 
       }
 
     );
+
+
+    const counts =
+      getCounts ? getCounts() : null;
 
 
     renderFilterOptions(
@@ -2477,11 +2883,13 @@ function buildFilter(
 
         setSelected(value);
 
-        render();
+        refreshAllFilterOptions();
 
         applyFilters();
 
-      }
+      },
+
+      counts
 
     );
 
@@ -2489,6 +2897,8 @@ function buildFilter(
 
 
   render();
+
+  return render;
 
 }
 
@@ -2558,6 +2968,9 @@ Papa.parse(
         results.meta.fields;
 
 
+      allRows = results.data;
+
+
       // ------------------------------------------------------
       // Normalized header lookup
       // ------------------------------------------------------
@@ -2613,335 +3026,366 @@ Papa.parse(
       const unmatchedSpecEntries = [];
 
 
-      COLUMN_DISPLAY_SPEC.forEach(
-        function (specName) {
+      const indicatorField =
+        normalizedToActual[
+          normalizeHeader('Indicator Name')
+        ];
+
+      const previousValueField =
+        normalizedToActual[
+          normalizeHeader('Previous Value')
+        ];
+
+      const currentValueField =
+        normalizedToActual[
+          normalizeHeader('Current Value')
+        ];
+
+      const percentChangeField =
+        normalizedToActual[
+          normalizeHeader(
+            'Current vs Previous Delta (%)'
+          )
+        ];
 
 
-          const actualField =
-            normalizedToActual[
-              normalizeHeader(specName)
-            ];
+      // --------------------------------------------------
+      // Change (direction icon)
+      // --------------------------------------------------
+
+      if (percentChangeField) {
+
+        changeColumnIndex =
+          matchedColumns.length;
 
 
-          if (!actualField) {
+        matchedColumns.push({
 
-            unmatchedSpecEntries.push(
-              specName
+          title: 'Change',
+
+          data: null,
+
+          className:
+            'value-column change-column',
+
+
+          render: function (
+            data,
+            type,
+            row
+          ) {
+
+            const direction =
+              getChangeDirection(row);
+
+
+            if (
+              type === 'filter' ||
+              type === 'sort' ||
+              type === 'type'
+            ) {
+
+              return direction || '';
+
+            }
+
+
+            if (!direction) {
+
+              return '';
+
+            }
+
+
+            return getChangeIcon(
+              direction
             );
 
-            return;
-
           }
 
+        });
 
-          // --------------------------------------------------
-          // Indicator
-          // --------------------------------------------------
+      }
 
-          if (
-            specName === 'Indicator Name'
+      else {
+
+        unmatchedSpecEntries.push(
+          'Current vs Previous Delta (%)'
+        );
+
+      }
+
+
+      // --------------------------------------------------
+      // Indicator
+      // --------------------------------------------------
+
+      if (indicatorField) {
+
+        matchedColumns.push({
+
+          title:
+            COLUMN_HEADERS[indicatorField] ||
+            'Indicator',
+
+          data: indicatorField,
+
+
+          render: function (
+            data,
+            type,
+            row
           ) {
 
-            matchedColumns.push({
+            if (
+              type !== 'display'
+            ) {
 
-              title:
-                COLUMN_HEADERS[actualField] ||
-                'Indicator',
+              return data || '';
 
-              data: actualField,
-
-
-              render: function (
-                data,
-                type,
-                row
-              ) {
-
-                if (
-                  type !== 'display'
-                ) {
-
-                  return data || '';
-
-                }
+            }
 
 
-                const dateField =
-                  normalizedToActual[
-                    normalizeHeader(
-                      'Current Value Date'
-                    )
-                  ];
+            const dataByField =
+              normalizedToActual[
+                normalizeHeader(
+                  'Data by'
+                )
+              ];
 
 
-                const dataByField =
-                  normalizedToActual[
-                    normalizeHeader(
-                      'Data by'
-                    )
-                  ];
+            const measurementField =
+              normalizedToActual[
+                normalizeHeader(
+                  'Indicator Measurement'
+                )
+              ];
 
 
-                const measurementField =
-                  normalizedToActual[
-                    normalizeHeader(
-                      'Indicator Measurement'
-                    )
-                  ];
+            const measurement =
+              measurementField
+                ? row[measurementField] || ''
+                : '';
 
 
-                const measurement =
-                  measurementField
-                    ? row[measurementField] || ''
-                    : '';
+            const dataBy =
+              dataByField
+                ? row[dataByField] || ''
+                : '';
 
 
-                const updated =
-                  dateField
-                    ? row[dateField] || ''
-                    : '';
+            return `
+
+              <div class="indicator-cell">
+
+                <div class="indicator-cell__name">
+
+                  ${escapeHtml(data || '')}
+
+                  <br>
+
+                  <span class="indicator-cell__measurement">
+
+                    ${escapeHtml(measurement)}
+
+                  </span>
+
+                </div>
 
 
-                const dataBy =
-                  dataByField
-                    ? row[dataByField] || ''
-                    : '';
+                <div class="indicator-cell__meta">
 
+                  ${dataBy
+                    ? `Data by: ${escapeHtml(dataBy)}`
+                    : ''}
 
-                return `
+                </div>
 
-                  <div class="indicator-cell">
+              </div>
 
-                    <div class="indicator-cell__name">
-
-                      ${escapeHtml(data || '')}
-
-                      <br>
-
-                      <span class="indicator-cell__measurement">
-
-                        ${escapeHtml(measurement)}
-
-                      </span>
-
-                    </div>
-
-
-                    <div class="indicator-cell__meta">
-
-                      ${dataBy
-                        ? `Data by: ${escapeHtml(dataBy)}`
-                        : ''}
-
-                    </div>
-
-                  </div>
-
-                `;
-
-              }
-
-            });
-
-
-            return;
+            `;
 
           }
 
+        });
 
-          // --------------------------------------------------
-          // Previous Value / Current Value
-          // --------------------------------------------------
+      }
 
-          if (
-            specName === 'Previous Value' ||
-            specName === 'Current Value'
+      else {
+
+        unmatchedSpecEntries.push(
+          'Indicator Name'
+        );
+
+      }
+
+
+      // --------------------------------------------------
+      // Percent Change
+      // --------------------------------------------------
+
+      if (percentChangeField) {
+
+        percentChangeColumnIndex =
+          matchedColumns.length;
+
+
+        matchedColumns.push({
+
+          title:
+            COLUMN_HEADERS[percentChangeField] ||
+            'Percent change',
+
+          data: percentChangeField,
+
+          type: 'absolute-percent',
+
+          className:
+            'value-column percent-change-column',
+
+
+          render: function (
+            data,
+            type
           ) {
 
-            matchedColumns.push({
+            if (
+              type !== 'display'
+            ) {
 
-              title:
-                COLUMN_HEADERS[actualField] ||
-                specName,
+              return data || '';
 
-              data: actualField,
-
-              className: 'value-column',
+            }
 
 
-              render: function (
-                data,
-                type,
-                row
-              ) {
+            if (
+              !isNumericValue(data)
+            ) {
 
-                if (
-                  type !== 'display'
-                ) {
+              return data || '';
 
-                  return data || '';
-
-                }
+            }
 
 
-                return formatValue(
-                  data,
-                  row,
-                  true
-                );
+            return (
 
-              }
+              formatNumericValue(data) +
+              '%'
 
-            });
-
-
-            return;
+            );
 
           }
 
+        });
 
-          // --------------------------------------------------
-          // Percent Change
-          // --------------------------------------------------
+      }
 
-          if (
-            specName ===
-            'Current vs Previous Delta (%)'
+
+      // --------------------------------------------------
+      // Previous Value
+      // --------------------------------------------------
+
+      if (previousValueField) {
+
+        matchedColumns.push({
+
+          title:
+            COLUMN_HEADERS[previousValueField] ||
+            'Previous Value',
+
+          data: previousValueField,
+
+          className:
+            'value-column previous-value-column',
+
+
+          render: function (
+            data,
+            type,
+            row
           ) {
 
+            if (
+              type !== 'display'
+            ) {
 
-            // ------------------------------------------------
-            // Change direction column
-            // ------------------------------------------------
+              return data || '';
 
-            changeColumnIndex =
-              matchedColumns.length;
-
-
-            matchedColumns.push({
-
-              title: 'Change',
-
-              data: null,
-
-              className:
-                'value-column change-column',
+            }
 
 
-              render: function (
-                data,
-                type,
-                row
-              ) {
-
-                const direction =
-                  getChangeDirection(row);
-
-
-                if (
-                  type === 'filter' ||
-                  type === 'sort' ||
-                  type === 'type'
-                ) {
-
-                  return direction || '';
-
-                }
-
-
-                if (!direction) {
-
-                  return '';
-
-                }
-
-
-                return getChangeIcon(
-                  direction
-                );
-
-              }
-
-            });
-
-
-            // ------------------------------------------------
-            // Percent Change
-            // ------------------------------------------------
-
-            percentChangeColumnIndex =
-              matchedColumns.length;
-
-
-            matchedColumns.push({
-
-              title:
-                COLUMN_HEADERS[actualField] ||
-                'Percent change',
-
-              data: actualField,
-
-              type: 'absolute-percent',
-
-              className: 'value-column percent-change-column',
-
-
-              render: function (
-                data,
-                type
-              ) {
-
-                if (
-                  type !== 'display'
-                ) {
-
-                  return data || '';
-
-                }
-
-
-                if (
-                  !isNumericValue(data)
-                ) {
-
-                  return data || '';
-
-                }
-
-
-                return (
-
-                  formatNumericValue(data) +
-                  '%'
-
-                );
-
-              }
-
-            });
-
-
-            return;
+            return formatValue(
+              data,
+              row,
+              true
+            );
 
           }
 
+        });
 
-          // --------------------------------------------------
-          // Other columns
-          // --------------------------------------------------
+      }
 
-          matchedColumns.push({
+      else {
 
-            title:
-              COLUMN_HEADERS[actualField] ||
-              specName,
+        unmatchedSpecEntries.push(
+          'Previous Value'
+        );
 
-            data: actualField
+      }
 
-          });
 
-        }
-      );
+      // --------------------------------------------------
+      // Current Value
+      // --------------------------------------------------
+
+      if (currentValueField) {
+
+        matchedColumns.push({
+
+          title:
+            COLUMN_HEADERS[currentValueField] ||
+            'Current Value',
+
+          data: currentValueField,
+
+          className: 'value-column',
+
+
+          render: function (
+            data,
+            type,
+            row
+          ) {
+
+            if (
+              type !== 'display'
+            ) {
+
+              return data || '';
+
+            }
+
+
+            return formatValue(
+              data,
+              row,
+              true
+            );
+
+          }
+
+        });
+
+      }
+
+      else {
+
+        unmatchedSpecEntries.push(
+          'Current Value'
+        );
+
+      }
 
 
       // ------------------------------------------------------
@@ -3287,30 +3731,33 @@ Papa.parse(
           );
 
 
-        buildFilter(
+        renderTagsFilter =
+          buildFilter(
 
-          values,
+            values,
 
-          subcatOptionsEl,
+            subcatOptionsEl,
 
-          subcatSelectedEl,
+            subcatSelectedEl,
 
-          'No tag selected',
+            'No tag selected',
 
-          function () {
+            function () {
 
-            return selectedTag;
+              return selectedTag;
 
-          },
+            },
 
-          function (value) {
+            function (value) {
 
-            selectedTag =
-              value;
+              selectedTag =
+                value;
 
-          }
+            },
 
-        );
+            getTagCounts
+
+          );
 
       }
 
@@ -3357,30 +3804,40 @@ Papa.parse(
           );
 
 
-        buildFilter(
+        renderFrequencyFilter =
+          buildFilter(
 
-          values,
+            values,
 
-          frequencyOptionsEl,
+            frequencyOptionsEl,
 
-          frequencySelectedEl,
+            frequencySelectedEl,
 
-          'No frequency selected',
+            'No frequency selected',
 
-          function () {
+            function () {
 
-            return selectedFrequency;
+              return selectedFrequency;
 
-          },
+            },
 
-          function (value) {
+            function (value) {
 
-            selectedFrequency =
-              value;
+              selectedFrequency =
+                value;
 
-          }
+            },
 
-        );
+            function () {
+
+              return getSimpleFieldCounts(
+                'frequency',
+                'frequency'
+              );
+
+            }
+
+          );
 
       }
 
@@ -3427,30 +3884,40 @@ Papa.parse(
           );
 
 
-        buildFilter(
+        renderDataSourceFilter =
+          buildFilter(
 
-          values,
+            values,
 
-          dataSourceOptionsEl,
+            dataSourceOptionsEl,
 
-          dataSourceSelectedEl,
+            dataSourceSelectedEl,
 
-          'No source selected',
+            'No source selected',
 
-          function () {
+            function () {
 
-            return selectedDataSource;
+              return selectedDataSource;
 
-          },
+            },
 
-          function (value) {
+            function (value) {
 
-            selectedDataSource =
-              value;
+              selectedDataSource =
+                value;
 
-          }
+            },
 
-        );
+            function () {
+
+              return getSimpleFieldCounts(
+                'dataSource',
+                'dataSource'
+              );
+
+            }
+
+          );
 
       }
 
